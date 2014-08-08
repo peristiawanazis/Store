@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+	<wsdl:definitions name="telkomWSDL_telkomVoucher" targetNamespace="http://www.webmethods.com/"
+			xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+			xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+			xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+			xmlns:tns="http://www.webmethods.com/"
+			xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+			xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/">
+	<wsdl:types>
+        <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://localhost/telkomWSDL/telkomVoucher/flexi_validasiVoucher" xmlns:tns="http://localhost/telkomWSDL/telkomVoucher/flexi_validasiVoucher">
+          <xsd:complexType name="__flexi_validasiVoucherInput">
+            <xsd:sequence>
+              <xsd:element name="VSN" nillable="true" type="xsd:string"/>
+              <xsd:element name="HRN" nillable="true" type="xsd:string"/>
+            </xsd:sequence>
+          </xsd:complexType>
+          <xsd:complexType name="__flexi_validasiVoucherOutput">
+            <xsd:sequence>
+              <xsd:element name="statusCode" nillable="true" type="xsd:string"/>
+              <xsd:element name="strMessage" nillable="true" type="xsd:string"/>
+              <xsd:element name="nominal" nillable="true" type="xsd:string"/>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:schema>
+
+	</wsdl:types>
+	
+	<wsdl:message name="flexi_validasiVoucherInput">
+		<wsdl:part name="VSN" type="xsd:string"/>
+		<wsdl:part name="HRN" type="xsd:string"/>
+	</wsdl:message>
+	
+	<wsdl:message name="flexi_validasiVoucherOutput">
+		<wsdl:part name="statusCode" type="xsd:string"/>
+		<wsdl:part name="strMessage" type="xsd:string"/>
+		<wsdl:part name="nominal" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:portType name="telkomWSDL_telkomVoucherPortType">
+		<wsdl:operation name="flexi_validasiVoucher">
+			<wsdl:input message="tns:flexi_validasiVoucherInput"/>
+			<wsdl:output message="tns:flexi_validasiVoucherOutput"/>
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="telkomWSDL_telkomVoucherBinding" type="tns:telkomWSDL_telkomVoucherPortType">
+		<soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<wsdl:operation name="flexi_validasiVoucher">
+			<soap:operation soapAction=""/>
+			<wsdl:input>
+				<soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://www.webmethods.com/telkomWSDL.telkomVoucher" use="encoded"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://www.webmethods.com/telkomWSDL.telkomVoucher" use="encoded"/>
+			</wsdl:output>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="telkomWSDL_telkomVoucherService">
+		<wsdl:port name="telkomWSDL_telkomVoucherPort0" binding="tns:telkomWSDL_telkomVoucherBinding">
+			<soap:address location="http://10.34.160.41:6503/soap/rpc"/>
+		</wsdl:port>
+	</wsdl:service>
+	</wsdl:definitions>

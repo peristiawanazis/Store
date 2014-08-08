@@ -1,0 +1,6 @@
+ERROR - 2012-03-05 17:10:17 --> Severity: Warning  --> SoapClient::__doRequest() [<a href='soapclient.--dorequest'>soapclient.--dorequest</a>]: connect() failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+ C:\xampp\htdocs\store\application\models\mpaymentgateway.php 128
+ERROR - 2012-03-05 18:01:27 --> Severity: Warning  --> SoapClient::__doRequest() [<a href='soapclient.--dorequest'>soapclient.--dorequest</a>]: connect() failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+ C:\xampp\htdocs\store\application\models\mpaymentgateway.php 128
+ERROR - 2012-03-05 18:12:39 --> Severity: Warning  --> SoapClient::__doRequest() [<a href='soapclient.--dorequest'>soapclient.--dorequest</a>]: connect() failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+ C:\xampp\htdocs\store\application\models\mpaymentgateway.php 128

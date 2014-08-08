@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+	<wsdl:definitions name="telkomWSDL_service_Speedy" targetNamespace="http://www.webmethods.com/"
+			xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+			xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+			xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+			xmlns:tns="http://www.webmethods.com/"
+			xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+			xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/">
+	<wsdl:types>
+        <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://localhost/telkomWSDL/service/Speedy/OS3_Radius_Status" xmlns:tns="http://localhost/telkomWSDL/service/Speedy/OS3_Radius_Status">
+          <xsd:complexType name="__OS3_Radius_StatusInput">
+            <xsd:sequence>
+              <xsd:element name="userSpeedy" nillable="true" type="xsd:string"/>
+            </xsd:sequence>
+          </xsd:complexType>
+          <xsd:complexType name="__OS3_Radius_StatusOutput">
+            <xsd:sequence>
+              <xsd:element name="OS3IPAdresse" nillable="true" type="xsd:string"/>
+              <xsd:element name="OS3Paket" nillable="true" type="xsd:string"/>
+              <xsd:element name="OS3Status" nillable="true" type="xsd:string"/>
+              <xsd:element name="RadiusPaket" nillable="true" type="xsd:string"/>
+              <xsd:element name="RadiusIPAdresse" nillable="true" type="xsd:string"/>
+              <xsd:element name="RadiusPORT" nillable="true" type="xsd:string"/>
+              <xsd:element name="RadiusStatus" nillable="true" type="xsd:string"/>
+              <xsd:element name="ServiceCode" nillable="true" type="xsd:string"/>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:schema>
+
+	</wsdl:types>
+	
+	<wsdl:message name="_OS3_Radius_StatusInput">
+		<wsdl:part name="userSpeedy" type="xsd:string"/>
+	</wsdl:message>
+	
+	<wsdl:message name="_OS3_Radius_StatusOutput">
+		<wsdl:part name="OS3IPAdresse" type="xsd:string"/>
+		<wsdl:part name="OS3Paket" type="xsd:string"/>
+		<wsdl:part name="OS3Status" type="xsd:string"/>
+		<wsdl:part name="RadiusPaket" type="xsd:string"/>
+		<wsdl:part name="RadiusIPAdresse" type="xsd:string"/>
+		<wsdl:part name="RadiusPORT" type="xsd:string"/>
+		<wsdl:part name="RadiusStatus" type="xsd:string"/>
+		<wsdl:part name="ServiceCode" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:portType name="telkomWSDL_service_SpeedyPortType">
+		<wsdl:operation name="OS3_Radius_Status">
+			<wsdl:input message="tns:_OS3_Radius_StatusInput"/>
+			<wsdl:output message="tns:_OS3_Radius_StatusOutput"/>
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="telkomWSDL_service_SpeedyBinding" type="tns:telkomWSDL_service_SpeedyPortType">
+		<soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<wsdl:operation name="OS3_Radius_Status">
+			<soap:operation soapAction=""/>
+			<wsdl:input>
+				<soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://www.webmethods.com/telkomWSDL.service.Speedy" use="encoded"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://www.webmethods.com/telkomWSDL.service.Speedy" use="encoded"/>
+			</wsdl:output>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="telkomWSDL_service_SpeedyService">
+		<wsdl:port name="telkomWSDL_service_SpeedyPort0" binding="tns:telkomWSDL_service_SpeedyBinding">
+			<soap:address location="http://10.34.12.4:5600/soap/rpc"/>
+		</wsdl:port>
+	</wsdl:service>
+	</wsdl:definitions>

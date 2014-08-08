@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+	<wsdl:definitions name="telkomVoucher_businessProcess" targetNamespace="http://www.webmethods.com/"
+			xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+			xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+			xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+			xmlns:tns="http://www.webmethods.com/"
+			xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+			xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/">
+	<wsdl:types>
+        <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://localhost/telkomVoucher/businessProcess/flexi_provContent_TContent" xmlns:tns="http://localhost/telkomVoucher/businessProcess/flexi_provContent_TContent">
+          <xsd:complexType name="__flexi_provVoucherHotSpotInput">
+            <xsd:sequence>
+              <xsd:element name="transactionID" nillable="true" type="xsd:string"/>
+              <xsd:element name="transactionDate" nillable="true" type="xsd:string"/>
+              <xsd:element name="transType" nillable="true" type="xsd:string"/>
+              <xsd:element name="account" nillable="true" type="xsd:string"/>
+              <xsd:element name="pricePlan" nillable="true" type="xsd:string"/>
+              <xsd:element name="MDN" nillable="true" type="xsd:string"/>
+              <xsd:element name="VSN" nillable="true" type="xsd:string"/>
+              <xsd:element name="HRN" nillable="true" type="xsd:string"/>
+            </xsd:sequence>
+          </xsd:complexType>
+          <xsd:complexType name="__flexi_provContent_TContentOutput">
+            <xsd:sequence>
+              <xsd:element name="statusCode" nillable="true" type="xsd:string"/>
+              <xsd:element name="strMessage" nillable="true" type="xsd:string"/>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:schema>
+
+	</wsdl:types>
+	
+	<wsdl:message name="flexi_provContent_TContentInput">
+		<wsdl:part name="transactionID" type="xsd:string"/>
+		<wsdl:part name="transactionDate" type="xsd:string"/>
+		<wsdl:part name="transType" type="xsd:string"/>
+		<wsdl:part name="account" type="xsd:string"/>
+		<wsdl:part name="pricePlan" type="xsd:string"/>
+		<wsdl:part name="MDN" type="xsd:string"/>
+		<wsdl:part name="VSN" type="xsd:string"/>
+		<wsdl:part name="HRN" type="xsd:string"/>
+	</wsdl:message>
+	
+	<wsdl:message name="flexi_provContent_TContentOutput">
+		<wsdl:part name="statusCode" type="xsd:string"/>
+		<wsdl:part name="strMessage" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:portType name="telkomVoucher_businessProcessPortType">
+		<wsdl:operation name="flexi_provContent_TContent">
+			<wsdl:input message="tns:flexi_provContent_TContentInput"/>
+			<wsdl:output message="tns:flexi_provContent_TContentOutput"/>
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="telkomVoucher_businessProcessBinding" type="tns:telkomVoucher_businessProcessPortType">
+		<soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<wsdl:operation name="flexi_provContent_TContent">
+			<soap:operation soapAction=""/>
+			<wsdl:input>
+				<soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://www.webmethods.com/telkomVoucher.businessProcess" use="encoded"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://www.webmethods.com/telkomVoucher.businessProcess" use="encoded"/>
+			</wsdl:output>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="telkomVoucher_businessProcessService">
+		<wsdl:port name="telkomVoucher_businessProcessPort0" binding="tns:telkomVoucher_businessProcessBinding">
+			<soap:address location="http://10.34.160.41:6503/soap/rpc"/>
+		</wsdl:port>
+	</wsdl:service>
+	</wsdl:definitions>

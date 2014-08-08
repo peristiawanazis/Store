@@ -1,0 +1,565 @@
+<?php
+
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+if (!defined('BASEPATH'))
+    exit('No direct script access allowed');
+
+class transaction extends CI_Controller {
+
+    public
+    $page = array();
+
+    function __construct() {
+        parent::__construct();
+        $this->getparam();
+        $this->checksignstatus();
+    }
+
+    function getcurrentmaxdate() {
+        $currdate = "'" . date('Y-m-d H:i:s') . "'";
+        $year = substr($currdate, 0, 5);
+        $month = intval(substr($currdate, 6, 2));
+        $maxdate = array(1 => 31, 2 => 27, 3 => 31, 4 => 30, 5 => 31, 6 => 30, 7 => 31, 8 => 31, 9 => 30, 10 => 31, 11 => 30, 12 => 31);
+        if ($year % 4 == 0) {
+            if ($month == 2) {
+                return 28;
+            } else {
+                return $maxdate[$month];
+            }
+        }
+    }
+
+    function getparam() {
+        @session_start();
+        $this->page['application']['siteurl'] = site_url();
+        $this->page['application']['baseurl'] = base_url();
+        $this->page['header']['application']['siteurl'] = site_url();
+        $this->page['header']['application']['baseurl'] = base_url();
+        $this->page['header']['application']['theme'] = 'default';
+        $this->page['iserror'] = false;
+        $this->page['error_mesg'] = "";
+        $this->page['islogin'] = false;
+        $this->page['sessions'] = array();
+        $this->page['trxparams'] = array();
+        $this->page['contentparams'] = array();
+        if (!isset($this->page['header']['application']['baseurl'])) //application configuration
+            $this->page['header']['application'] = array(
+                'baseurl' => base_url(),
+                'siteurl' => site_url(),
+                'theme' => 'default'
+            ); //skin css -> default
+        $this->urisegments = $this->uri->uri_to_assoc($this->config->item('uriparam_index'));
+        if (count($this->urisegments) > 0) {
+            if (isset($this->urisegments['ajax'])) {
+                $this->urisegments['ajax'] ? $this->page['application']['ajax'] = true : $this->page['application']['ajax'] = false;
+            }
+            if (isset($this->urisegments['page']))
+                is_numeric($this->urisegments['page']) ? null : $this->urisegments['page'] = 0;
+            else
+                $this->urisegments['page'] = 0;
+            if (isset($this->urisegments['widget']))
+                ($this->urisegments['widget'] == 'true') ? $this->dgparams['pageconfig']['widget'] = true : null;
+            $this->page['application']['urisegments'] = $this->urisegments;
+        } else {
+            $this->page['application']['urisegments']['page'] = 0;
+        }
+        //URI PARAM
+        //f_CONTENTCATEGORY
+        //echo "<pre>";
+        //print_r($this->page);
+        //echo "</pre>";
+    }
+
+    function speedygetcontentdetail() {
+        $contents = $this->mmasterdata->getcontentdetail(array('contentid' => $this->page['application']['urisegments']['f_CONTENTID']));
+        $content = array();
+        $rowseq = 0;
+        $content = null;
+        foreach ($contents as $row) {
+            if ($rowseq == 0) {
+                $content['contentid'] = $row['CONTENTID'];
+                $content['name'] = $row['NAME'];
+                $content['contentimage'] = $row['CONTENTIMAGE'];
+                $content['longdescript'] = $row['LONGDESCRIPT'];
+                $content['category'] = $row['CONTENTCATEGORY'];
+                $content['provider'] = $row['CONTENTPROVIDER'];
+                $content['circlerating'] = $row['CIRCLERATINGPERIOD'];
+                $content['subscriptiontype'] = $row['SUBSCRIPTIONTYPE'];
+                $content['isautoextend'] = $row['ISAUTOEXTEND'];
+                $content['minsubscriptionmonth'] = $row['MINSUBSCRIPTIONMONTH'];
+                $content['createcontentaccount'] = $row['CREATECONTENTACCOUNT'];
+                $content['param1'] = $row['PARAM1'];
+                $content['param2'] = $row['PARAM2'];
+                if ($row['ISDISCOUNT'] == 1)
+                    $content['isdiscount'] = "Y";
+                else
+                    $content['isdiscount'] = "N";
+                if ($row['SUBSCRIPTIONTYPE'] == 'SBC')
+                    $content['substype'] = "Bulanan";
+                else
+                    $content['substype'] = "Sekali Bayar";
+            }
+            $content['price'][$row['RATINGSEQ']] = number_format($row['RATINGVALUE'], 0, '.', ',');
+            $content['discount'][$row['RATINGSEQ']]['discountvalue'] = $row['DISCOUNTVALUE'];
+            $content['discount'][$row['RATINGSEQ']]['discountmetric'] = $row['DISCOUNTMETRIC'];
+            $content['discount'][$row['RATINGSEQ']]['discountdescription'] = $row['DISCOUNTDESCRIPTION'];
+            $content['discount'][$row['RATINGSEQ']]['datestart'] = $row['DATESTART'];
+            $content['discount'][$row['RATINGSEQ']]['dateend'] = $row['DATEEND'];
+            $content['discount'][$row['RATINGSEQ']]['discountcoveragetype'] = $row['DISCOUNTCOVERAGETYPE'];
+            $content['discount'][$row['RATINGSEQ']]['discountcoverageparam'] = $row['DISCOUNTCOVERAGEPARAM'];
+            $content['discount'][$row['RATINGSEQ']]['discountperiodtSype'] = $row['DISCOUNTPERIODTYPE'];
+            $content['discount'][$row['RATINGSEQ']]['discountperiodparam'] = $row['DISCOUNTPERIODPARAM'];
+            $content['discount'][$row['RATINGSEQ']]['discountpaymentmethodtype'] = $row['DISCOUNTPAYMENTMETHODTYPE'];
+            $content['discount'][$row['RATINGSEQ']]['discountpaymentmethodparam'] = $row['DISCOUNTPAYMENTMETHODPARAM'];
+            $content['discount'][$row['RATINGSEQ']]['discountdeliverychanneltype'] = $row['DISCOUNTDELIVERYCHANNELTYPE'];
+            $content['discount'][$row['RATINGSEQ']]['discountdeliverychannelparam'] = $row['DISCOUNTDELIVERYCHANNELPARAM'];
+            if ($content['discount'][$row['RATINGSEQ']]['discountdescription'] == "")
+                $content['discount'][$row['RATINGSEQ']]['discountdescription'] = "-";
+            $rowseq++;
+            $content['priceseqtotal'] = $rowseq;
+        }
+        $this->page['content'] = $content;
+
+        if ($this->input->valid_email($content['param1']) || $this->input->valid_email($content['param2'])) {
+            $this->load->view('store/include/div-speedy-content-detail-box-email-forwarding', $this->page);
+        } else {
+            $this->load->view('store/include/div-speedy-content-detail-box', $this->page);
+        }
+    }
+
+    function speedytrxorderbyemailcontent() {
+        //print_r($_POST);
+        //print_r($this->urisegments);
+        $trxparams['CONTENTID'] = ucwords($this->urisegments['f_CONTENTID']);
+        $trxparams['COMPANY'] = ucwords($this->input->post('f_COMPANY'));
+        $trxparams['SERVICETYPE'] = ucwords($this->input->post('f_SERVICETYPE'));
+        $trxparams['ADDRESS1'] = ucwords($this->input->post('f_ADDRESS1'));
+        $trxparams['ADDRESS2'] = ucwords($this->input->post('f_ADDRESS2'));
+        $trxparams['CONTACTPERSON'] = ucwords($this->input->post('f_CONTACTPERSON'));
+        $trxparams['HOSTIP'] = $this->input->ip_address();
+        $trxparams['PHONE'] = $this->input->post('f_PHONE');
+        $trxparams['EMAILACCOUNT'] = strtolower($this->input->post('f_EMAIL'));
+        $trxparams['SUBSCRIPTIONMONTH'] = $this->input->post('f_SUBSCRIPTIONMONTH');
+        $trxparams['TOS'] = $this->input->post('f_TOS');
+        $trxparams['FOLLOWUPTYPE'] = $this->input->post('f_FOLLOWUPTYPE');
+        $trxparams['SPEEDYACCOUNT'] = "";
+        if ($trxparams['SUBSCRIPTIONMONTH'] == '')
+            $trxparams['SUBSCRIPTIONMONTH'] = 0;
+        $trxparams['SUBSCRIPTIONSTATUS'] = 'NA';
+        $trxparams['RESPONSECODE'] = '00'; //00 OK, SUBSCRIPTION: 01 ERROR TELKOM, 02 ERROR CP, 03 ERROR POLICY INFRINGEMENT, 04 ERROR INTERNAL TELKOM
+        //ACTIVATION: 11 ERROR TELKOM, 12 ERROR CP, 13 ERROR POLICY INFRINGEMENT, 14 ERROR INTERNAL TELKOM
+        $trxparams['USERIDCONTENT'] = $this->input->post('f_USERIDCONTENT');
+        $trxparams['PASSWDCONTENT'] = $this->input->post('f_PASSWDCONTENT');
+        //echo "<pre>";
+        //print_r($trxparams);
+        //echo "</pre>";
+        //check input validation
+        if (is_numeric($trxparams['CONTENTID']) && is_numeric($trxparams['SUBSCRIPTIONMONTH'])) {
+            if ($this->input->valid_ip($trxparams['HOSTIP']) && $this->input->valid_email($trxparams['EMAILACCOUNT'])) {
+                
+            } else {
+                $this->page['iserror'] = true;
+                $this->page['error_mesg'] = "Data yang Anda masukkan tidak valid, silahkan cek data email yang dimasukkan.";
+            }
+            //print_r($trxparams);
+        } else {
+            $this->page['iserror'] = true;
+            $this->page['error_mesg'] = "Periksa kembali data yang Anda masukkan, masukkan tanpa menggunakan karakter spasi atau alphabet lainnya.";
+        }
+        //get content information
+        $contentparams = $this->mmasterdata->gettrxcontentparam($trxparams['CONTENTID']);
+        if (!$contentparams) {
+            $this->page['iserror'] = true;
+            $this->page['error_mesg'] = "Data konten yang dipilih tidak tersedia.";
+        }
+        if ($_SESSION['security_code'] != $this->input->post('f_CAPTCHA')) {
+            //echo $_SESSION['security_code'];
+            $this->page['iserror'] = true;
+            $this->page['error_mesg'] = "Kode keamanan yang Anda masukkan salah.";
+        }
+        //check content policy subscription
+        if (!$this->page['iserror']) {
+            if ($contentparams['SUBSCRIPTIONTYPE'] == 'SBC') {
+                if (($trxparams['SUBSCRIPTIONMONTH'] >= $contentparams['MINSUBSCRIPTIONMONTH']) || ($trxparams['SUBSCRIPTIONMONTH'] == 0) || ($contentparams['MINSUBSCRIPTIONMONTH'] == 0)) { //check minimum subscription month
+                    if ($contentparams['MAXORDERFREQPERMONTH'] > 0) {
+                        $currentorderfreq = $this->mmasterdata->getcurrentmonthtrxorderfreq($trxparams['SPEEDYACCOUNT']);
+                        if ($currentorderfreq >= $contentparams['MAXORDERFREQPERMONTH']) {
+                            $trxparams['RESPONSECODE'] = '04';
+                            $this->page['iserror'] = true;
+                            $this->page['error_mesg'] = "Anda telah melewati jumlah maksimal transaksi berlangganan pada bulan berjalan.";
+                        }
+                    }
+                }
+            } elseif ($contentparams['SUBSCRIPTIONTYPE'] == 'CBC') {
+                $trxparams['SUBSCRIPTIONMONTH'] = 1;
+            } else
+                $trxparams['SUBSCRIPTIONMONTH'] = 1;
+        }
+        //echo "<pre>"; print_r($contentparams); echo "</pre>";
+        //insert transaction in database
+        if (!$this->page['iserror']) {
+            $subsstartdate = "'" . date('Y-m-d H:i:s') . "'";
+            $subsenddate = 'null';
+            if ($trxparams['SUBSCRIPTIONMONTH'] != 0) {
+                //secho $subsstartdate= date('Y-m-d H:i:s')."<br />"; //yyyy-mm-dd hh:mm:ss
+                //echo substr($subsstartdate,0,4)."<br />";
+                $year = intval(substr($subsstartdate, 1, 5)); //echo substr($subsstartdate,5,2)."<br />";
+                //echo $year."<br />";
+                $month = intval(substr($subsstartdate, 6, 2));
+                $month+= ( $trxparams['SUBSCRIPTIONMONTH'] - 1);
+                if ($month > 12) {
+                    $month = $month - 12;
+                    $year++;
+                }
+                if ($month < 10) {
+                    $strmonth = "0" . $month;
+                } else {
+                    $strmonth = $month;
+                }
+                $date = $this->getcurrentmaxdate();
+                if ($date < 10)
+                    $strdate = "0" . $date;
+                else
+                    $strdate= $date;
+                $subsenddate = "'" . $year . "-" . $strmonth . "-" . $strdate . " 23:59:59'";
+                //echo $subsenddate;
+            }
+            $trxparams['SUBSCRIPTIONID'] = $this->mmasterdata->insertsubscriptiontrxspeedy(
+                            $contentparams['CONTENTID'], $contentparams['SUBSCRIPTIONTYPE'], $trxparams['SUBSCRIPTIONSTATUS'], 'OLSTORE-SPEEDY', $trxparams['SPEEDYACCOUNT'], $trxparams['EMAILACCOUNT'], '', $trxparams['HOSTIP'], $trxparams['SUBSCRIPTIONMONTH'], $subsstartdate, $subsenddate, '');
+            $trxparams['ACTIVATIONID'] = $this->mmasterdata->gettrxactivationid($trxparams['SUBSCRIPTIONID']);
+        }
+        //forward transaction by email
+        if (!$this->page['iserror']) {
+            //echo "<pre>";
+            //print_r($trxparams);
+            //echo "</pre>";
+            $emailconfig['smtp_host'] = "10.11.15.37"; //"smtp.telkom.net";
+            $emailconfig['smtp_port'] = "25";
+            $emailconfig['smtp_user'] = "webstore";
+            $emailconfig['smtp_pass'] = "bismillah";
+            $emailconfig['protocol'] = "smtp";
+            $this->load->library('email');
+            $this->email->initialize($emailconfig);
+
+            $this->email->from($trxparams['EMAILACCOUNT'], $trxparams['CONTACTPERSON']);
+            if ($this->input->valid_email($contentparams['PARAM1']))
+                $this->email->to($contentparams['PARAM1']);
+            if ($this->input->valid_email($contentparams['PARAM2']))
+                $this->email->cc($contentparams['PARAM2']);
+            $this->email->subject('[ORDER TSDC] ' . $contentparams['NAME']);
+            $this->email->message('
+Dear Telkom,
+
+Kami tertarik untuk berlangganan 
+layanan Telkom : ' . $contentparams['NAME'] . ', 
+mohon agar dapat ditindaklanjuti pada kespa.
+
+Berikut Data Pelanggan:
+---------------------------------------------------------------
+Nama Perusahaan: ' . $trxparams['COMPANY'] . '
+Jenis Usaha: ' . $trxparams['SERVICETYPE'] . '
+Alamat: ' . $trxparams['ADDRESS1'] . ' ' . $trxparams['ADDRESS2'] . '
+Kontak: ' . $trxparams['CONTACTPERSON'] . '
+Telepon: ' . $trxparams['PHONE'] . '
+Email: ' . $trxparams['EMAILACCOUNT'] . '
+Follow Up Via: ' . $trxparams['FOLLOWUPTYPE'] . '
+----------------------------------------------------------------
+
+Regards
+
+
+' . $trxparams['CONTACTPERSON'] . '
+
+powered by Webstore TSDC');
+            $this->email->send();
+            $this->email->print_debugger();
+        }
+        $this->page['trxparams'] = $trxparams;
+        if (isset($contentparams))
+            $this->page['contentparams'] = $contentparams;
+        if (!$this->page['iserror']) {
+            $this->page['error_mesg'] = "<p>Data pemesanan layanan " . $contentparams['NAME'] . " <b>telah kami simpan</b>,
+                kami akan segera melakukan follow up melalui kontak yang Anda telah isikan.</p>
+               <br />
+               ";
+        }
+        //echo '<br />RC: '.$this->page['iserror'];
+        //echo '<br />MSG: '.$this->page['error_mesg'];
+        $this->load->view('store/include/div-speedy-trx-result-box-email-forwarding', $this->page);
+    }
+
+    function speedytrxbuycontent() {
+        //print_r($_POST);
+        //print_r($this->urisegments);
+        $trxparams['CONTENTID'] = $this->urisegments['f_CONTENTID'];
+        if ($this->page['islogin'] == true) {
+            $trxparams['SPEEDYACCOUNT'] = $this->page['sessions'][1];
+        } else {
+            $trxparams['SPEEDYACCOUNT'] = $this->input->post('f_SPEEDYACCOUNT');
+        }
+        $trxparams['MDNNUMBER'] = $this->input->post('f_PHONEHOME');
+        $trxparams['HOSTIP'] = $this->input->ip_address();
+        $trxparams['EMAILACCOUNT'] = $this->input->post('f_EMAIL');
+        $trxparams['SUBSCRIPTIONMONTH'] = @$this->input->post('f_SUBSCRIPTIONMONTH');
+        $trxparams['TOS'] = @$this->input->post('f_TOS');
+        if ($trxparams['SUBSCRIPTIONMONTH'] == '')
+            $trxparams['SUBSCRIPTIONMONTH'] = 0;
+        $trxparams['SUBSCRIPTIONSTATUS'] = 'NA';
+        $trxparams['RESPONSECODE'] = '00'; //00 OK, SUBSCRIPTION: 01 ERROR TELKOM, 02 ERROR CP, 03 ERROR POLICY INFRINGEMENT, 04 ERROR INTERNAL TELKOM
+        //ACTIVATION: 11 ERROR TELKOM, 12 ERROR CP, 13 ERROR POLICY INFRINGEMENT, 14 ERROR INTERNAL TELKOM
+        $trxparams['ACTIVATIONID'] = '';
+        $trxparams['SUBSCRIPTIONID'] = '';
+        $trxparams['USERIDCONTENT'] = $this->input->post('f_USERIDCONTENT');
+        $trxparams['PASSWDCONTENT'] = $this->input->post('f_PASSWDCONTENT');
+        $trxparams['PARAM1'] = $this->input->post('f_PARAM1');
+        $trxparams['PARAM2'] = $this->input->post('f_PARAM2');
+        //echo "<pre>"; print_r($trxparams);echo "</pre>";
+        //check input validation
+        if (is_numeric($trxparams['CONTENTID']) && is_numeric($trxparams['SPEEDYACCOUNT']) && is_numeric($trxparams['MDNNUMBER']) && is_numeric($trxparams['SUBSCRIPTIONMONTH'])) {
+            if ($this->input->valid_ip($trxparams['HOSTIP']) && $this->input->valid_email($trxparams['EMAILACCOUNT'])) {
+                
+            } else {
+                $this->page['iserror'] = true;
+                $this->page['error_mesg'] = "Data yang Anda masukkan tidak valid, silahkan cek data email yang dimasukkan.";
+            }
+            //print_r($trxparams);
+        } else {
+            $this->page['iserror'] = true;
+            $this->page['error_mesg'] = "Periksa kembali data <b>Nomor Speedy</b> dan <b>Nomor Telepon</b> yang Anda masukkan, masukkan tanpa menggunakan karakter spasi atau alphabet lainnya.";
+        }
+        //get content information
+        $contentparams = $this->mmasterdata->gettrxcontentparam($trxparams['CONTENTID']);
+        if (!$contentparams) {
+            $this->page['iserror'] = true;
+            $this->page['error_mesg'] = "Data konten yang dipilih tidak tersedia.";
+        }
+        if ($_SESSION['security_code'] != $this->input->post('f_CAPTCHA')) {
+            //echo $_SESSION['security_code'];
+            $this->page['iserror'] = true;
+            $this->page['error_mesg'] = "Kode keamanan yang Anda masukkan salah.";
+        }
+        //check content policy subscription
+        if (!$this->page['iserror']) {
+            if ($contentparams['SUBSCRIPTIONTYPE'] == 'SBC') {
+                if (($trxparams['SUBSCRIPTIONMONTH'] >= $contentparams['MINSUBSCRIPTIONMONTH']) || ($trxparams['SUBSCRIPTIONMONTH'] == 0) || ($contentparams['MINSUBSCRIPTIONMONTH'] == 0)) { //check minimum subscription month
+                    if ($contentparams['MAXORDERFREQPERMONTH'] > 0) {
+                        $currentorderfreq = $this->mmasterdata->getcurrentmonthtrxorderfreq($trxparams['SPEEDYACCOUNT']);
+                        if ($currentorderfreq >= $contentparams['MAXORDERFREQPERMONTH']) {
+                            $trxparams['RESPONSECODE'] = '04';
+                            $this->page['iserror'] = true;
+                            $this->page['error_mesg'] = "Anda telah melewati jumlah maksimal transaksi berlangganan pada bulan berjalan.";
+                        }
+                    }
+                }
+            } elseif ($contentparams['SUBSCRIPTIONTYPE'] == 'CBC') {
+                $trxparams['SUBSCRIPTIONMONTH'] = 1;
+            } else
+                $trxparams['SUBSCRIPTIONMONTH'] = 1;
+        }
+        //echo "<pre>"; print_r($contentparams); echo "</pre>";
+        //check validation credential
+        if (!$this->page['iserror']) {
+            $result = $this->mpaymentgateway->speedyvalidation($trxparams['SPEEDYACCOUNT']); //validation speedy account
+            if ($result == 1) {
+                $result = $this->mpaymentgateway->speedymdnvalidation($trxparams['SPEEDYACCOUNT'], $trxparams['MDNNUMBER']); //validation speedy account and MDN
+                if ($result == 1) {
+                    $result = $this->mpaymentgateway->speedyipvalidation($trxparams['SPEEDYACCOUNT'], $trxparams['HOSTIP']); //validation speedy account and MDN
+                    if ($result != 1) {
+                        $trxparams['RESPONSECODE'] = '03';
+                        $this->page['iserror'] = true;
+                        $this->page['error_mesg'] = "Pembelian tidak berhasil.<br />Anda tidak melakukan transaksi pembelian dari jaringan Speedy Anda, pastikan Anda telah terhubung ke jaringan Speedy Anda.";
+                    }
+                } else {
+
+                    $trxparams['RESPONSECODE'] = '03';
+                    $this->page['iserror'] = true;
+                    $this->page['error_mesg'] = "Pembelian tidak berhasil.<br />Validasi nomor Speedy dan nomor telepon rumah tidak valid, silahkan diperiksa kembali nomor Speedy dan nomor telepon rumah Anda.";
+                }
+            } else {
+                $trxparams['RESPONSECODE'] = '03';
+                $this->page['iserror'] = true;
+                $this->page['error_mesg'] = "Pembelian tidak berhasil.<br />Validasi nomor Speedy tidak valid, silahkan diperiksa kembali nomor Speedy Anda.";
+            }
+        }
+        //insert transaction in database
+        if (!$this->page['iserror']) {
+            //insert transaction in db;
+            $subsstartdate = "'" . date('Y-m-d H:i:s') . "'";
+            $subsenddate = 'null';
+            if ($trxparams['SUBSCRIPTIONMONTH'] != 0) {
+                //secho $subsstartdate= date('Y-m-d H:i:s')."<br />"; //yyyy-mm-dd hh:mm:ss
+                //echo substr($subsstartdate,0,4)."<br />";
+                $year = intval(substr($subsstartdate, 1, 5)); //echo substr($subsstartdate,5,2)."<br />";
+                //echo $year."<br />";
+                $month = intval(substr($subsstartdate, 6, 2));
+                $month+= ( $trxparams['SUBSCRIPTIONMONTH'] - 1);
+                if ($month > 12) {
+                    $month = $month - 12;
+                    $year++;
+                }
+                if ($month < 10) {
+                    $strmonth = "0" . $month;
+                } else {
+                    $strmonth = $month;
+                }
+                $date = $this->getcurrentmaxdate();
+                if ($date < 10)
+                    $strdate = "0" . $date;
+                else
+                    $strdate= $date;
+                $subsenddate = "'" . $year . "-" . $strmonth . "-" . $strdate . " 23:59:59'";
+                //echo $subsenddate;
+            }
+            $trxparams['SUBSCRIPTIONID'] = $this->mmasterdata->insertsubscriptiontrxspeedy(
+                            $contentparams['CONTENTID'], $contentparams['SUBSCRIPTIONTYPE'], $trxparams['SUBSCRIPTIONSTATUS'], 'OLSTORE-SPEEDY', $trxparams['SPEEDYACCOUNT'], $trxparams['EMAILACCOUNT'], '', $trxparams['HOSTIP'], $trxparams['SUBSCRIPTIONMONTH'], $subsstartdate, $subsenddate, '');
+            $trxparams['ACTIVATIONID'] = $this->mmasterdata->gettrxactivationid($trxparams['SUBSCRIPTIONID']);
+        }
+        //forward transaction to Content Provider
+        if (!$this->page['iserror']) {
+            $result = $this->mpaymentgateway->forwardtransactiontocp($contentparams, $trxparams);
+            if ($result == 1) {
+                //update transaction in database
+                $trxparams['SUBSCRIPTIONSTATUS'] = 'NA';
+                $trxparams['RESPONSECODE'] = '00';
+                $trxparams['ACTIVATIONDATE'] = "null";
+                if ($this->mmasterdata->updatesubscriptiontrxspeedy($trxparams) != 1) {
+                    $this->page['iserror'] = true;
+                    $this->page['error_mesg'] = "Pembelian tidak berhasil.<br />Internal error di Telkom saat penyimpanan data.";
+                }
+            } else {
+                //update transaction in database
+                $trxparams['SUBSCRIPTIONSTATUS'] = 'NA';
+                $trxparams['RESPONSECODE'] = '02';
+                $trxparams['ACTIVATIONDATE'] = "null";
+                if ($this->mmasterdata->updatesubscriptiontrxspeedy($trxparams) == 1) {
+                    $this->page['iserror'] = true;
+                    if (@$trxparams['USERIDCONTENT'] != null) {
+                        $this->page['error_mesg'] = "Pembelian tidak berhasil.<br />Transaksi pembelian konten " . $contentparams['NAME'] . " gagal dieksekusi di sisi mitra content provider.
+                            Silahkan cek user id untuk layana content Anda, hal ini dikarenakan user id tersebut telah digunakan oleh user lain.";
+                    } else {
+                        $this->page['error_mesg'] = "Pembelian tidak berhasil.<br />Transaksi pembelian konten " . $contentparams['NAME'] . " gagal dieksekusi di sisi mitra content provider.";
+                    }
+                }
+            }
+        }
+        $this->page['trxparams'] = $trxparams;
+        if (isset($contentparams))
+            $this->page['contentparams'] = $contentparams;
+        if (!$this->page['iserror']) {
+            $this->page['error_mesg'] = "<p>Transaksi pembelian konten " . $contentparams['NAME'] . " <b>telah berhasil</b>,
+                silahkan aktivasi pembelian dengan klik url yang ada di email Anda (" . $trxparams['EMAILACCOUNT'] . ") agar layanan konten dapat digunakan.</p>
+               <br />
+               ";
+        }
+        //echo '<br />RC: '.$this->page['iserror'];
+        //echo '<br />MSG: '.$this->page['error_mesg'];
+        $this->load->view('store/include/div-speedy-trx-result-box', $this->page);
+    }
+
+    function checksignstatus() {
+        if (isset($_SESSION['store_sesion_code'])) {
+            $rawsession = $this->encrypt->decode($_SESSION['store_sesion_code']);
+            $this->page['sessions'] = explode('||', $rawsession);
+            if (count($this->page['sessions']) >= 3)
+                $this->page['islogin'] = true;
+            //print_r($this->page['sessions']);
+        }
+    }
+
+    function speedyunsubscontent() {
+        $contentresults = array();
+        $subsresult = array();
+        $contentparams = array();
+        $trxparams = array();
+        $result = 0;
+
+        //GET PARAMETER
+        $subscriptionid = @$this->page['application']['urisegments']['f_SUBSCRIPTIONID'];
+        if (!is_numeric($subscriptionid)) {
+            $subscriptionid = 0;
+        }
+        //GET SUBSCRIPTON INFORMATION
+        $subsresult = $this->mmasterdata->getsubscriptiontrxspeedy($subscriptionid);
+        //echo "SUBS RESULT<pre>";
+        //print_r($subsresult);
+        //echo "</pre>";
+
+        if (count($subsresult) == 0) {
+            $this->page['iserror'] = true;
+            $this->page['error_mesg'] = "Data berlangganan content tidak ditemukan.";
+            $this->page['iserror'] = true;
+        }
+        if ($subsresult['SUBSCRIPTIONSTATUS'] != 'S') {
+            $this->page['iserror'] = true;
+            $this->page['error_mesg'] = "Data berlangganan content tidak ditemukan.";
+            ;
+        }
+        if ($this->page['iserror'] == false) {
+            $contentresults = $this->mmasterdata->getsubscribedcontentdetail(array('contentid' => $subsresult['CONTENTID']));
+            if (count($contentresults) < 1) {
+                $this->page['iserror'] = true;
+                $this->page['error_mesg'] = "Data konten tidak ditemukan.";
+            }
+            $contentresult = $contentresults[0];
+        }
+        //echo "CONTENT RESULT<pre>";
+        //print_r($contentresult);
+        //echo "</pre>";
+        $trxparams['SUBSCRIPTIONSTATUS'] = "NS";
+        $trxparams['RESPONSECODE'] = "00";
+        $trxparams['DELIVERYCHANNEL'] = 'OLSTORE-SPEEDY';
+        $trxparams['UNSUBSHOSTIP'] = $this->input->ip_address();
+        $trxparams['UNSUBSDATE'] = date('Y-m-d H:i:s');
+        $trxparams['SUBSCRIPTIONID'] = $subsresult['SUBSCRIPTIONID'];
+        if (!$this->page['islogin']) {
+            $this->page['iserror'] = true;
+            $this->page['error_mesg'] = "Silahkan login terlebih dahulu untuk berhenti berlangganan content Anda.";
+        }
+        if ($this->page['iserror'] == false) {
+            $contentparams['CONTENTID'] = $contentresult['CONTENTID'];
+            $contentparams['FORWARDINGURL'] = $contentresult['FORWARDINGURL'];
+            $trxparams['RESPONSECODE'] = '00';
+            $trxparams['DELIVERYCHANNEL'] = 'OLSTORE-SPEEDY';
+            $trxparams['UNSUBSDATE'] = date('Y-m-d H:i:s');
+            $trxparams['SPEEDYACCOUNT'] = $subsresult['SPEEDYACCOUNT'];
+            $trxparams['EMAILACCOUNT'] = $subsresult['EMAILACCOUNT'];
+            $trxparams['SUBSCRIPTIONID'] = $subsresult['SUBSCRIPTIONID'];
+            $trxparams['ACTIVATIONID'] = $subsresult['ACTIVATIONID']; //$activation_id;
+            $trxparams['HOSTIP'] = $this->input->ip_address();
+            //echo "<pre>";
+            //print_r($trxparams);
+            //print_r($contentparams);
+            //echo "</pre>";
+            $result = $this->mpaymentgateway->forwardunsubscriptiontocp($contentparams, $trxparams, "unsubscribe");
+            //echo "<br />RESULT: ".$result;
+            if ($result == 1) {  //UPDATE DATABASE
+                //echo "<br />TRXPARAMS<br /><pre>";
+                //print_r($trxparams);
+                //echo "</pre>";
+                $this->page['error_mesg'] = "Berhenti berlangganan telah sukses, Anda tidak dikenakan tagihan berlangganan content pada tagihan Speedy bulan depan.";
+                $this->mmasterdata->stopsubscriptiontrxspeedy($trxparams);
+            } else { //UPDATE DATABASE AND SET RESPONSE CODE IS ERROR
+                $trxparams['SUBSCRIPTIONSTATUS'] = $subsresult['SUBSCRIPTIONSTATUS'];
+                $trxparams['RESPONSECODE'] = "22";
+                $this->mmasterdata->updatesubscriptiontrxspeedy($trxparams);
+                $this->page['iserror'] = true;
+                $this->page['error_mesg'] = "Berhenti berlangganan gagal dilakukan karena error atau kesalahan di sisi Mitra, silahkan kontak ke call center Telkom (147) dan informasikan nama paket content dan informasi error di atas.";
+            }
+        }
+        //echo "RESP CODE: ".$this->page['iserror']."<br />RESP MESSAGE: ".$this->page['error_mesg'];
+        if ($this->page['iserror'])
+            echo "<div class='process-information'><h3>Unsubscription Gagal !</h3><br />" . $this->page['error_mesg'] . "</div>";
+        else
+            echo "<div class='process-information'><h3>Unsubscription Sukses !</h3><br />" . $this->page['error_mesg'] . "</div>";
+        echo '<br /><img src="' . $this->page['application']['baseurl'] . 'skin/default/images/ajax-loading.gif">';
+        echo "<script>
+            setTimeout(\"$('#content-mycontent-box').load('" . $this->page['application']['siteurl'] . "content/getmycontentlist/ajax/true/')\",5000);
+            </script>";
+    }
+
+}
+
+?>

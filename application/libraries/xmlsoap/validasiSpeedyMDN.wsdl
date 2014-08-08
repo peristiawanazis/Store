@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+	<wsdl:definitions name="telkomWSDL_SPEEDY" targetNamespace="http://www.webmethods.com/"
+			xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+			xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+			xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+			xmlns:tns="http://www.webmethods.com/"
+			xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+			xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/">
+	<wsdl:types>
+        <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://localhost/telkomWSDL/SPEEDY/validasiSpeedyMDN" xmlns:tns="http://localhost/telkomWSDL/SPEEDY/validasiSpeedyMDN">
+          <xsd:complexType name="__validasiSpeedyMDNInput">
+            <xsd:sequence>
+              <xsd:element name="mdn" nillable="true" type="xsd:string"/>
+              <xsd:element name="noSpeedy" nillable="true" type="xsd:string"/>
+            </xsd:sequence>
+          </xsd:complexType>
+          <xsd:complexType name="__validasiSpeedyMDNOutput">
+            <xsd:sequence>
+              <xsd:element name="statusCode" nillable="true" type="xsd:string"/>
+              <xsd:element name="strMessage" nillable="true" type="xsd:string"/>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:schema>
+
+	</wsdl:types>
+
+	<wsdl:message name="validasiSpeedyMDNInput">
+		<wsdl:part name="mdn" type="xsd:string"/>
+		<wsdl:part name="noSpeedy" type="xsd:string"/>
+	</wsdl:message>
+
+	<wsdl:message name="validasiSpeedyMDNOutput">
+		<wsdl:part name="statusCode" type="xsd:string"/>
+		<wsdl:part name="strMessage" type="xsd:string"/>
+	</wsdl:message>
+	<wsdl:portType name="telkomWSDL_SPEEDYPortType">
+		<wsdl:operation name="validasiSpeedyMDN">
+			<wsdl:input message="tns:validasiSpeedyMDNInput"/>
+			<wsdl:output message="tns:validasiSpeedyMDNOutput"/>
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="telkomWSDL_SPEEDYBinding" type="tns:telkomWSDL_SPEEDYPortType">
+		<soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<wsdl:operation name="validasiSpeedyMDN">
+			<soap:operation soapAction=""/>
+			<wsdl:input>
+				<soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://www.webmethods.com/telkomWSDL.SPEEDY" use="encoded"/>
+			</wsdl:input>
+			<wsdl:output>
+				<soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://www.webmethods.com/telkomWSDL.SPEEDY" use="encoded"/>
+			</wsdl:output>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="telkomWSDL_SPEEDYService">
+		<wsdl:port name="telkomWSDL_SPEEDYPort0" binding="tns:telkomWSDL_SPEEDYBinding">
+			<soap:address location="http://10.34.160.41:6505/soap/rpc"/>
+		</wsdl:port>
+	</wsdl:service>
+	</wsdl:definitions>

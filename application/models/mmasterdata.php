@@ -1,0 +1,573 @@
+<?php
+
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+class mmasterdata extends CI_Model {
+
+    function __construct() {
+        parent::__construct();
+    }
+
+    function getcontents() {
+        $sqlcmd = "select '' as keydt,  ' ' as valuedt ,'' name union select contentid keydt,concat(name,' Cycle: ',circleratingperiod,
+            'Substype: ',subscriptiontype) valuedt,name from contents order by name";
+        return $this->db->query($sqlcmd)->result_array();
+    }
+
+    function getcontentproviders() {
+        $sqlcmd = "select contentproviderid keydt,name valuedt from contentproviders order by name";
+        return $this->db->query($sqlcmd)->result_array();
+    }
+
+    function getcontentstatus() {
+        $sqlcmd = "select contentstatusid keydt,name valuedt from contentstatus order by name";
+        return $this->db->query($sqlcmd)->result_array();
+    }
+
+    function getsubscriptiontypes() {
+        $sqlcmd = "SELECT subscriptiontypeid keydt, name valuedt FROM subscriptiontypes order by name";
+        return $this->db->query($sqlcmd)->result_array();
+    }
+
+    function getcontentcategories() {
+        $sqlcmd = "SELECT contentcategoryid keydt, name valuedt FROM contentcategories order by name";
+        return $this->db->query($sqlcmd)->result_array();
+    }
+
+    function getcreatecontentaccounttypes() {
+        return array('0' => "No", '1' => "Yes");
+    }
+
+    function getvisibilitytypes() {
+        return array('PO' => "Portal Store Only", 'GO' => "Embedded Gateway Only", 'PG' => "Portal Store & Embedded Gateway");
+    }
+
+    function getcircleratings() {
+        for ($i = 0; $i <= 12; $i++) {
+            $circleratings[$i] = $i;
+        }
+        return $circleratings;
+    }
+
+    function getdiscountmetric() {
+        return array('%' => "Persentasi dari harga konten ( % )", 'IDR' => "Diskon sejumlah nilai rupiah ( IDR )");
+    }
+
+    function getdiscountcoveragetype() {
+        return array('PREFIX' => "Prefik nomor account pembayaran");
+    }
+
+    function getdiscountperiodtype() {
+        return array('FIXDAY' => "Hari tertentu yyyy-mm-dd, #1-#7",
+            'FIXRANGEDAY' => "Rentang hari yyyy-mm-dd - yyyy-mm-dd",
+            'FIXFROMREGISTEREDDAY' => "Rentang XX hari dari tanggal pendaftaran",
+            'FIXMONTH' => "Bulan tertentu yyyy-mm-dd, #1-#12",
+            'FIXRANGEMONTH' => "Rentang bulan yyyy-mm - yyyy-mm",
+            'FIXFROMREGISTEREDMONTH' => "Rentang XX bulan dari tanggal pendaftaran");
+    }
+
+    function getdiscountpaymentmethodtype() {
+        return array(
+            'IVAS' => "IVAS"
+            , 'FLEXISMS' => "Flexi SMS"
+            , 'IPS' => "IPS"
+            , 'FLEXICASH' => "FC"
+            , 'POSTPAIDSPEEDY' => "POSTPAID SPEEDY"
+            , 'TELKOMVOUCHER' => "TELKOM VOUCHER"
+            , 'INDOMOG' => "INDOMOG VOUCHER"
+            , 'ALL' => "All Payment Method"
+        );
+    }
+
+    function getdiscountdeliverychanneltype() {
+        return array(
+            'SINGLEDC' => "Single DC"
+            , 'MULTIPLEDC' => "Multiple DC"
+        );
+    }
+
+    function getcontentgroupname() {
+        $sqlcmd = "select distinct  contentcategories.NAME, CONTENTCATEGORYID, COUNT(CONTENTID) QTY
+            from contents inner join contentcategories on contents.CONTENTCATEGORY=CONTENTCATEGORYID
+            where contents.CONTENTSTATUS='A'
+            group by contentcategories.NAME, CONTENTCATEGORYID
+            order by contentcategories.indexseq,contentcategories.NAME";
+        return $this->db->query($sqlcmd)->result_array();
+    }
+
+    function getcontentnewrelease() {
+        $sqlcmd = "
+            select
+            CONTENTID,A.NAME,CONTENTIMAGE,SHORTDESCRIPT,GROUPNAME,
+            B.NAME CONTENTCATEGORY,C.NAME CONTENTPROVIDER,
+            CREATECONTENTACCOUNT,SUBSCRIPTIONTYPE,CIRCLERATINGPERIOD,
+            FORWARDINGURL,REDIRECTURL,
+            RATINGSEQ,RATINGVALUE,CONTENTDISCOUNTID,DATESTART,DATEEND
+            from
+            contents A
+            inner join contentcategories B on A.CONTENTCATEGORY=B.CONTENTCATEGORYID
+            inner join contentproviders C on A.CONTENTPROVIDER=C.CONTENTPROVIDERID
+            inner join contentratings D on A.CONTENTID=D.CONTENT
+            left join contentdiscounts E on D.CONTENTRATINGID=E.CONTENTRATING
+            where
+            CONTENTSTATUS='A' and
+            (VISIBILITYTYPE='PO' or VISIBILITYTYPE='PG')
+            order by
+            CONTENTID DESC,RATINGSEQ ASC
+            limit 0," . $this->config->item('max_newrelease');
+        return $this->db->query($sqlcmd)->result_array();
+    }
+
+    function getcontentlist($where= null, $rowstart=null, $rowcount=null) {
+        $sqlcmd = "
+            select DISTINCT
+            CONTENTID,A.NAME,CONTENTIMAGE,SHORTDESCRIPT,GROUPNAME,
+            B.NAME CONTENTCATEGORY,C.NAME CONTENTPROVIDER,
+            CREATECONTENTACCOUNT,SUBSCRIPTIONTYPE,CIRCLERATINGPERIOD,
+            FORWARDINGURL,REDIRECTURL,
+            RATINGSEQ,RATINGVALUE,CONTENTDISCOUNTID
+            from
+            contents A
+            inner join contentcategories B on A.CONTENTCATEGORY=B.CONTENTCATEGORYID
+            inner join contentproviders C on A.CONTENTPROVIDER=C.CONTENTPROVIDERID
+            inner join contentratings D on A.CONTENTID=D.CONTENT
+            left join contentdiscounts E on D.CONTENTRATINGID=E.CONTENTRATING
+            where
+            CONTENTSTATUS='A' and
+            (VISIBILITYTYPE='PO' or VISIBILITYTYPE='PG') and
+            RATINGSEQ=1
+            ";
+        if (isset($where)) {
+            foreach ($where as $key => $value) {
+                $sqlcmd.= " and " . $key . "= '" . $value . "'";
+            }
+        }
+        $sqlcmd.= " order by
+            CONTENTID DESC,RATINGSEQ ASC ";
+        if (isset($rowstart) && isset($rowcount)) {
+            if (isset($where)) {
+                $sqlcmd.= " limit " . $rowstart . "," . $rowcount;
+            } else {
+                $sqlcmd.= " limit " . ($rowstart + $this->config->item('max_newrelease')) . "," . ($rowcount);
+            }
+        }
+        return $this->db->query($sqlcmd)->result_array();
+    }
+
+    function getcontenttotalrow($where=null) {
+        $sqlcmd = "
+            select count(*) as totrow
+            from (select DISTINCT
+            CONTENTID,A.NAME,SHORTDESCRIPT,GROUPNAME,
+            B.NAME CONTENTCATEGORY,C.NAME CONTENTPROVIDER,
+            CREATECONTENTACCOUNT,SUBSCRIPTIONTYPE,CIRCLERATINGPERIOD,
+            FORWARDINGURL,REDIRECTURL,
+            RATINGSEQ,RATINGVALUE,CONTENTDISCOUNTID
+            from
+            contents A
+            inner join contentcategories B on A.CONTENTCATEGORY=B.CONTENTCATEGORYID
+            inner join contentproviders C on A.CONTENTPROVIDER=C.CONTENTPROVIDERID
+            inner join contentratings D on A.CONTENTID=D.CONTENT
+            left join contentdiscounts E on D.CONTENTRATINGID=E.CONTENTRATING
+            where
+            CONTENTSTATUS='A' and
+            (VISIBILITYTYPE='PO' or VISIBILITYTYPE='PG') and
+            RATINGSEQ=1
+            ";
+        if (isset($where)) {
+            foreach ($where as $key => $value) {
+                $sqlcmd.= " and " . $key . "= '" . $value . "'";
+            }
+        }
+        $sqlcmd.= ") content ";
+        $totrow = $this->db->query($sqlcmd)->result_array();
+        if (isset($where)) {
+            return ($totrow[0]['totrow']);
+        } else
+            return ($totrow[0]['totrow'] - $this->config->item('max_newrelease'));
+    }
+
+    function getcontentdetail($where=null) {
+        $sqlcmd = "
+        select
+        CONTENTID,A.NAME,SHORTDESCRIPT,LONGDESCRIPT,GROUPNAME,
+        B.NAME CONTENTCATEGORY,C.NAME CONTENTPROVIDER,CONTENTIMAGE,
+        CREATECONTENTACCOUNT,SUBSCRIPTIONTYPE,CIRCLERATINGPERIOD,
+        FORWARDINGURL,REDIRECTURL,ISDISCOUNT,ISAUTOEXTEND,
+        MAXORDERFREQPERMONTH,MAXORDERCHARGEPERMONTH,MINSUBSCRIPTIONMONTH,PARAM1,PARAM2,
+        RATINGSEQ,RATINGVALUE,
+        CONTENTDISCOUNTID,DISCOUNTMETRIC,DISCOUNTVALUE,DISCOUNTDESCRIPTION,
+        DISCOUNTCOVERAGETYPE,DISCOUNTCOVERAGEPARAM,DISCOUNTPERIODTYPE,DISCOUNTPERIODPARAM,
+        DISCOUNTPAYMENTMETHODTYPE,DISCOUNTPAYMENTMETHODPARAM,
+        DISCOUNTDELIVERYCHANNELTYPE,DISCOUNTDELIVERYCHANNELPARAM,
+        DATESTART,DATEEND
+        from
+        contents A
+        inner join contentcategories B on A.CONTENTCATEGORY=B.CONTENTCATEGORYID
+        inner join contentproviders C on A.CONTENTPROVIDER=C.CONTENTPROVIDERID
+        inner join contentratings D on A.CONTENTID=D.CONTENT
+        left join contentdiscounts E on D.CONTENTRATINGID=E.CONTENTRATING
+        where
+        CONTENTSTATUS='A' and
+        (VISIBILITYTYPE='PO' or VISIBILITYTYPE='PG')
+        and CONTENTID=" . $where['contentid'] . "
+        order by
+        RATINGSEQ
+        ";
+        return $this->db->query($sqlcmd)->result_array();
+    }
+
+    function getcontentdetail_ex($where=null) {
+        $sqlcmd = "
+        select
+        CONTENTID,A.NAME,SHORTDESCRIPT,LONGDESCRIPT,GROUPNAME,
+        B.NAME CONTENTCATEGORY,C.NAME CONTENTPROVIDER,CONTENTIMAGE,
+        CREATECONTENTACCOUNT,SUBSCRIPTIONTYPE,CIRCLERATINGPERIOD,
+        FORWARDINGURL,REDIRECTURL,ISDISCOUNT,ISAUTOEXTEND,
+        MAXORDERFREQPERMONTH,MAXORDERCHARGEPERMONTH,MINSUBSCRIPTIONMONTH,PARAM1,PARAM2,
+        RATINGSEQ,RATINGVALUE,
+        CONTENTDISCOUNTID,DISCOUNTMETRIC,DISCOUNTVALUE,DISCOUNTDESCRIPTION,
+        DISCOUNTCOVERAGETYPE,DISCOUNTCOVERAGEPARAM,DISCOUNTPERIODTYPE,DISCOUNTPERIODPARAM,
+        DISCOUNTPAYMENTMETHODTYPE,DISCOUNTPAYMENTMETHODPARAM,
+        DISCOUNTDELIVERYCHANNELTYPE,DISCOUNTDELIVERYCHANNELPARAM,
+        DATESTART,DATEEND
+        from
+        contents A
+        inner join contentcategories B on A.CONTENTCATEGORY=B.CONTENTCATEGORYID
+        inner join contentproviders C on A.CONTENTPROVIDER=C.CONTENTPROVIDERID
+        inner join contentratings D on A.CONTENTID=D.CONTENT
+        left join contentdiscounts E on D.CONTENTRATINGID=E.CONTENTRATING
+        where
+        CONTENTSTATUS='A' 
+        and CONTENTID=" . $where['contentid'] . "
+        order by
+        RATINGSEQ
+        ";
+        return $this->db->query($sqlcmd)->result_array();
+    }
+
+    function getcurrentmonthtrxorderfreq($speedyaccount) {
+        $sqlcmd = "select COUNT(postpaidspeedyaccount) CURRENTMONTHTRXORDERFREQ
+        from subscriptions
+        where
+        SUBSSTARTDATE=DATE_FORMAT(current_date,'%Y-%m-01 00:00:00') and POSTPAIDSPEEDYACCOUNT='" . $speedyaccount . "'";
+        $result = $this->db->query($sqlcmd)->result_array();
+        //echo $sqlcmd;
+        if (count($result) > 0)
+            return $result[0]['CURRENTMONTHTRXORDERFREQ'];
+        else
+            return 0;
+    }
+
+    function insertsubscriptiontrxssc($VCONTENT= 'null', $VSUBSCRIPTIONTYPE= 'null', $VSUBSCRIPTIONSTATUS= 'null', $VDELIVERYCHANNEL= 'null', $VSSCACCOUNT= 'null', $VPAYMENTACCOUNT_NUMBER= 'null', $VPAYMENTACCOUNT_TYPE= 'null', $VPAYMENTACCOUNT_ATTRIBUTE= 'null', $VEMAILACCOUNT= 'null', $VACTIVATIONKEY= 'null', $VHOSTIP= 'null', $VDURATION= 'null', $VSUBSSTARTDATE= 'null', $VSUBSENDDATE= 'null', $VSYSTRXREFERENCE= 'null', $VREFSUBSCRIPTION= 'null', $VREFSUBSCRIPTIONTYPE= '') {
+        $VPREPAIDSPEEDYACCOUNT = "null";
+        $VPOSTPAIDSPEEDYACCOUNT = "null";
+        $VPREPAIDFLEXIACCOUNT = "null";
+        $VPOSTPAIDFLEXIACCOUNT = "null";
+        $VPREPAIDDELIMAACCOUNT = "null";
+        $VPREPAIDTELKOMVOUCHERACCOUNT = "null";
+        $VPREPAIDINSTANTPAYMENTACCOUNT = "null";
+
+        if ($VPAYMENTACCOUNT_TYPE == "SPEEDY") {
+            if ($VPAYMENTACCOUNT_ATTRIBUTE == "POSTPAID") {
+                $VPOSTPAIDSPEEDYACCOUNT = "'" . $VPAYMENTACCOUNT_NUMBER . "'";
+            } else {
+                $VPREPAIDSPEEDYACCOUNT = "'" . $VPAYMENTACCOUNT_NUMBER . "'";
+            }
+        } elseif ($VPAYMENTACCOUNT_TYPE == "FLEXI") {
+            if ($VPAYMENTACCOUNT_ATTRIBUTE == "POSTPAID") {
+                $VPOSTPAIDFLEXIACCOUNT = "'" . $VPAYMENTACCOUNT_NUMBER . "'";
+            } else {
+                $VPREPAIDFLEXIACCOUNT = "'" . $VPAYMENTACCOUNT_NUMBER . "'";
+            }
+        } elseif ($VPAYMENTACCOUNT_TYPE == "DELIMA") {
+            if ($VPAYMENTACCOUNT_ATTRIBUTE == "PREPAID") {
+                $VPREPAIDDELIMAACCOUNT = "'" . $VPAYMENTACCOUNT_NUMBER . "'";
+            }
+        } elseif ($VPAYMENTACCOUNT_TYPE == "TRANSFER") {
+            if ($VPAYMENTACCOUNT_ATTRIBUTE == "PREPAID") {
+                $VPREPAIDINSTANTPAYMENTACCOUNT = "'" . $VPAYMENTACCOUNT_NUMBER . "'";
+            }
+        } elseif ($VPAYMENTACCOUNT_TYPE == "TVOUCHER") {
+            if ($VPAYMENTACCOUNT_ATTRIBUTE == "PREPAID") {
+                $VPREPAIDTELKOMVOUCHERACCOUNT = "'" . $VPAYMENTACCOUNT_NUMBER . "'";
+            }
+        }
+        $sqlcmd = "select insertsubscriptiontrxssc(
+            " . $VCONTENT . ",
+            '" . $VSUBSCRIPTIONTYPE . "',
+            '" . $VSUBSCRIPTIONSTATUS . "',
+            '" . $VDELIVERYCHANNEL . "',
+            " . $VPREPAIDSPEEDYACCOUNT . ",
+            " . $VPOSTPAIDSPEEDYACCOUNT . ",
+            " . $VPREPAIDFLEXIACCOUNT . ",
+            " . $VPOSTPAIDFLEXIACCOUNT . ",
+            " . $VPREPAIDDELIMAACCOUNT . ",
+            " . $VPREPAIDTELKOMVOUCHERACCOUNT . ",
+            " . $VPREPAIDINSTANTPAYMENTACCOUNT . ",
+            '" . $VEMAILACCOUNT . "',
+            '" . $VSSCACCOUNT . "',
+            '" . $VACTIVATIONKEY . "',
+            '" . $VHOSTIP . "',
+            " . $VDURATION . ",
+            " . $VSUBSSTARTDATE . ",
+            " . $VSUBSENDDATE . ",
+            '" . $VSYSTRXREFERENCE . "',
+            " . $VREFSUBSCRIPTION . ",
+            '" . $VREFSUBSCRIPTIONTYPE . "') SUBSCRIPTIONID";
+        //echo $sqlcmd;
+        $result = $this->db->query($sqlcmd)->result_array();
+        if (count($result) > 0) {
+            return $result[0]['SUBSCRIPTIONID'];
+        } else {
+            return null;
+        }
+    }
+
+    function insertsubscriptiontrxspeedy(
+    $VCONTENT= 'null', $VSUBSCRIPTIONTYPE= 'null', $VSUBSCRIPTIONSTATUS= 'null', $VDELIVERYCHANNEL= 'null', $VPOSTPAIDSPEEDYACCOUNT= 'null', $VEMAILACCOUNT= 'null', $VACTIVATIONKEY= 'null', $VHOSTIP= 'null', $VDURATION= 'null', $VSUBSSTARTDATE= 'null', $VSUBSENDDATE= 'null', $VSYSTRXREFERENCE= 'null', $VREFSUBSCRIPTION= 'null', $VREFSUBSCRIPTIONTYPE= ''
+    ) {
+        $sqlcmd = "select insertsubscriptiontrxspeedy(
+            " . $VCONTENT . ",
+            '" . $VSUBSCRIPTIONTYPE . "',
+            '" . $VSUBSCRIPTIONSTATUS . "',
+            '" . $VDELIVERYCHANNEL . "',
+            '" . $VPOSTPAIDSPEEDYACCOUNT . "',
+            '" . $VEMAILACCOUNT . "',
+            '" . $VACTIVATIONKEY . "',
+            '" . $VHOSTIP . "',
+            " . $VDURATION . ",
+            " . $VSUBSSTARTDATE . ",
+            " . $VSUBSENDDATE . ",
+            '" . $VSYSTRXREFERENCE . "',
+            " . $VREFSUBSCRIPTION . ",
+            '" . $VREFSUBSCRIPTIONTYPE . "') SUBSCRIPTIONID";
+        //echo $sqlcmd;
+        $result = $this->db->query($sqlcmd)->result_array();
+        if (count($result) > 0) {
+            return $result[0]['SUBSCRIPTIONID'];
+        } else {
+            return null;
+        }
+    }
+
+    function getsubscriptiontrxspeedy($subscriptionid) {
+        $sqlcmd = "
+            select
+            CONTENT CONTENTID,
+            PREPAIDSPEEDYACCOUNT,
+            POSTPAIDSPEEDYACCOUNT,
+            POSTPAIDSPEEDYACCOUNT SPEEDYACCOUNT,
+            PREPAIDFLEXIACCOUNT,
+            POSTPAIDFLEXIACCOUNT,
+            TELKOMACCOUNTID,
+            MDNACCOUNT MDNNUMBER,
+            HOSTIP,
+            EMAILACCOUNT,
+            DURATION SUBSCRIPTIONMONTH,
+            SUBSCRIPTIONSTATUS,
+            RESPONSECODE,
+            ACTIVATIONKEY ACTIVATIONID,
+            SUBSCRIPTIONID,
+            REFSUBSCRIPTION,
+            REFSUBSCRIPTIONTYPE,
+            ISCHARGED
+            from subscriptions
+            where SUBSCRIPTIONID=" . $subscriptionid;
+        //echo $sqlcmd;
+        $result = $this->db->query($sqlcmd)->result_array();
+        if (count($result) == 0)
+            return null;
+        else
+            return $result[0];
+    }
+
+    function updatesubscriptiontrxssc($trxparams) {
+        $sqlcmd = "
+            update subscriptions set
+            SUBSCRIPTIONSTATUS='" . $trxparams['SUBSCRIPTIONSTATUS'] . "',
+            ACTIVATIONKEY='" . $trxparams['ACTIVATIONID'] . "',
+            RESPONSECODE='" . $trxparams['RESPONSECODE'] . "'
+            where SUBSCRIPTIONID= " . $trxparams['SUBSCRIPTIONID'];
+        $this->db->query($sqlcmd);
+        //echo $this->db->affected_rows();
+        return $this->db->affected_rows();
+    }
+
+    function updatepaymentstatusssc($trxparams) {
+        $sqlcmd = "
+            update subscriptions set
+            ISCHARGED='" . $trxparams['ISCHARGED'] . "'
+            where SUBSCRIPTIONID= " . $trxparams['SUBSCRIPTIONID'];
+        $this->db->query($sqlcmd);
+        return $this->db->affected_rows();
+    }
+
+    function updatesubscriptiontrxspeedy($trxparams) {
+        $sqlcmd = "
+            update subscriptions set
+            SUBSCRIPTIONSTATUS='" . $trxparams['SUBSCRIPTIONSTATUS'] . "',
+            ACTIVATIONKEY='" . $trxparams['ACTIVATIONID'] . "',
+            RESPONSECODE='" . $trxparams['RESPONSECODE'] . "'
+            where SUBSCRIPTIONID= " . $trxparams['SUBSCRIPTIONID'];
+        $this->db->query($sqlcmd);
+        //echo $this->db->affected_rows();
+        return $this->db->affected_rows();
+    }
+
+    function stopsubscriptiontrxspeedy($trxparams) {
+        $sqlcmd = "
+            update subscriptions set
+            SUBSCRIPTIONSTATUS='" . $trxparams['SUBSCRIPTIONSTATUS'] . "',
+            RESPONSECODE='" . $trxparams['RESPONSECODE'] . "',
+            UNSUBSDELIVERYCHANNEL='" . $trxparams['DELIVERYCHANNEL'] . "',
+            UNSUBSHOSTIP='" . $trxparams['HOSTIP'] . "',
+            UNSUBSDATE='" . $trxparams['UNSUBSDATE'] . "'
+            where SUBSCRIPTIONID= " . $trxparams['SUBSCRIPTIONID'];
+        //echo $sqlcmd;
+        $this->db->query($sqlcmd);
+        //echo $this->db->affected_rows();
+        return $this->db->affected_rows();
+    }
+
+    function activatesubscriptiontrxspeedy($trxparams) {
+        $sqlcmd = "
+            update subscriptions set
+            SUBSCRIPTIONSTATUS='" . $trxparams['SUBSCRIPTIONSTATUS'] . "',
+            RESPONSECODE='" . $trxparams['RESPONSECODE'] . "',
+            ACTIVATIONDATE=" . $trxparams['ACTIVATIONDATE'] . "
+            where SUBSCRIPTIONID= " . $trxparams['SUBSCRIPTIONID'];
+        $this->db->query($sqlcmd);
+        //echo $this->db->affected_rows();
+        return $this->db->affected_rows();
+    }
+
+    function gettrxactivationid($subscriptionid) {
+        //0200201100070000014343
+        //MM00YYYY00DD00000SSSSS
+        $activationid = date('d00Y00m');
+        $activationid.= str_pad($subscriptionid, 10, "0", STR_PAD_LEFT);
+        return $activationid;
+    }
+
+    function gettrxcontentparam($contentid) {
+        $sqlcmd = "
+        select
+        CONTENTID,A.NAME,SHORTDESCRIPT,LONGDESCRIPT,GROUPNAME,
+        CONTENTCATEGORY,CONTENTPROVIDER,B.NAME CATEGORY,C.NAME PROVIDER,
+        CREATECONTENTACCOUNT,SUBSCRIPTIONTYPE,CIRCLERATINGPERIOD,
+        FORWARDINGURL,REDIRECTURL,ISDISCOUNT,
+        MAXORDERFREQPERMONTH,MAXORDERCHARGEPERMONTH,MINSUBSCRIPTIONMONTH,PARAM1,PARAM2,
+        ISPAIDBYSPEEDY,ISPAIDBYFLEXI,ISPAIDBYDELIMA,ISPAIDBYTELKOMVOUCHER,ISPAIDBYIPS
+        from
+        contents A
+        inner join contentcategories B on A.CONTENTCATEGORY=B.CONTENTCATEGORYID
+        inner join contentproviders C on A.CONTENTPROVIDER=C.CONTENTPROVIDERID
+        where
+        CONTENTSTATUS='A' and
+        (VISIBILITYTYPE='PO' or VISIBILITYTYPE='PG') and 
+        CONTENTID=" . $contentid;
+        $result = $this->db->query($sqlcmd)->result_array();
+        if (count($result) == 0)
+            return null;
+        else
+            return $result[0];
+    }
+    function gettrxcontentparam_ex($contentid) {
+        $sqlcmd = "
+        select
+        CONTENTID,A.NAME,SHORTDESCRIPT,LONGDESCRIPT,GROUPNAME,
+        CONTENTCATEGORY,CONTENTPROVIDER,B.NAME CATEGORY,C.NAME PROVIDER,
+        CREATECONTENTACCOUNT,SUBSCRIPTIONTYPE,CIRCLERATINGPERIOD,
+        FORWARDINGURL,REDIRECTURL,ISDISCOUNT,
+        MAXORDERFREQPERMONTH,MAXORDERCHARGEPERMONTH,MINSUBSCRIPTIONMONTH,PARAM1,PARAM2,
+        ISPAIDBYSPEEDY,ISPAIDBYFLEXI,ISPAIDBYDELIMA,ISPAIDBYTELKOMVOUCHER,ISPAIDBYIPS
+        from
+        contents A
+        inner join contentcategories B on A.CONTENTCATEGORY=B.CONTENTCATEGORYID
+        inner join contentproviders C on A.CONTENTPROVIDER=C.CONTENTPROVIDERID
+        where
+        CONTENTSTATUS='A' and
+        CONTENTID=" . $contentid;
+        $result = $this->db->query($sqlcmd)->result_array();
+        if (count($result) == 0)
+            return null;
+        else
+            return $result[0];
+    }
+
+    function getcontentsubscriptionspeedy($speedyaccount) {
+        $sqlcmd = "
+        select
+        SUBSCRIPTIONID,B.NAME CONTENT,
+        A.HOSTIP,A.EMAILACCOUNT,
+        A.SUBSSTARTDATE,A.SUBSENDDATE,A.ACTIVATIONDATE,A.UNSUBSDATE,E.NAME RESPONSECODE,
+        D.SUBSCRIPTIONTYPEID,D.NAME SUBSCRIPTIONTYPE,
+        C.NAME SUBSCRIPTIONSTATUS,C.SUBSCRIPTIONSTATUSID
+        from subscriptions A left join contents B on A.CONTENT=B.CONTENTID
+        left join subscriptionstatus C on A.SUBSCRIPTIONSTATUS=C.SUBSCRIPTIONSTATUSID
+        left join subscriptiontypes D on A.SUBSCRIPTIONTYPE=D.SUBSCRIPTIONTYPEID
+        left join responsecodes E on A.RESPONSECODE=E.RESPONSECODE
+        where
+        A.POSTPAIDSPEEDYACCOUNT='" . $speedyaccount . "'
+        ORDER BY SUBSCRIPTIONSTATUSID DESC,SUBSSTARTDATE DESC,RESPONSECODE
+        limit 0,30";
+        return $this->db->query($sqlcmd)->result_array();
+    }
+
+    function getcontentsubscriptionssc($emailaccount) {
+        $sqlcmd = "
+        select
+        SUBSCRIPTIONID,B.NAME CONTENT,
+        A.HOSTIP,A.EMAILACCOUNT,
+        A.SUBSSTARTDATE,A.SUBSENDDATE,A.ACTIVATIONDATE,A.UNSUBSDATE,E.NAME RESPONSECODE,
+        D.SUBSCRIPTIONTYPEID,D.NAME SUBSCRIPTIONTYPE,
+        C.NAME SUBSCRIPTIONSTATUS,C.SUBSCRIPTIONSTATUSID
+        from subscriptions A left join contents B on A.CONTENT=B.CONTENTID
+        left join subscriptionstatus C on A.SUBSCRIPTIONSTATUS=C.SUBSCRIPTIONSTATUSID
+        left join subscriptiontypes D on A.SUBSCRIPTIONTYPE=D.SUBSCRIPTIONTYPEID
+        left join responsecodes E on A.RESPONSECODE=E.RESPONSECODE
+        where
+        A.POSTPAIDSPEEDYACCOUNT='" . $emailaccount . "'
+        ORDER BY SUBSCRIPTIONSTATUSID DESC,SUBSSTARTDATE DESC,RESPONSECODE
+        limit 0,30";
+        return $this->db->query($sqlcmd)->result_array();
+    }
+
+    function getsubscribedcontentdetail($where=null) {
+        $sqlcmd = "
+        select
+        CONTENTID,A.NAME,SHORTDESCRIPT,LONGDESCRIPT,GROUPNAME,
+        B.NAME CONTENTCATEGORY,C.NAME CONTENTPROVIDER,
+        CREATECONTENTACCOUNT,SUBSCRIPTIONTYPE,CIRCLERATINGPERIOD,
+        FORWARDINGURL,REDIRECTURL,ISDISCOUNT,
+        MAXORDERFREQPERMONTH,MAXORDERCHARGEPERMONTH,MINSUBSCRIPTIONMONTH,PARAM1,PARAM2,
+        RATINGSEQ,RATINGVALUE,
+        CONTENTDISCOUNTID,DISCOUNTMETRIC,DISCOUNTVALUE,DISCOUNTDESCRIPTION,
+        DISCOUNTCOVERAGETYPE,DISCOUNTCOVERAGEPARAM,DISCOUNTPERIODTYPE,DISCOUNTPERIODPARAM,
+        DISCOUNTPAYMENTMETHODTYPE,DISCOUNTPAYMENTMETHODPARAM,
+        DISCOUNTDELIVERYCHANNELTYPE,DISCOUNTDELIVERYCHANNELPARAM,
+        DATESTART,DATEEND
+        from
+        contents A
+        inner join contentcategories B on A.CONTENTCATEGORY=B.CONTENTCATEGORYID
+        inner join contentproviders C on A.CONTENTPROVIDER=C.CONTENTPROVIDERID
+        inner join contentratings D on A.CONTENTID=D.CONTENT
+        left join contentdiscounts E on D.CONTENTRATINGID=E.CONTENTRATING
+        where
+        CONTENTSTATUS='A' and
+        (VISIBILITYTYPE='PO' or VISIBILITYTYPE='PG')
+        and CONTENTID=" . $where['contentid'] . "
+        order by
+        RATINGSEQ
+        limit 0,1";
+        //echo $sqlcmd;
+        return $this->db->query($sqlcmd)->result_array();
+    }
+
+}
+
+?>

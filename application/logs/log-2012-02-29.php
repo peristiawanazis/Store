@@ -1,0 +1,10 @@
+ERROR - 2012-02-29 13:30:48 --> Severity: Warning  --> SoapClient::__doRequest() [<a href='soapclient.--dorequest'>soapclient.--dorequest</a>]: connect() failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+ C:\xampp\htdocs\store\application\models\mpaymentgateway.php 128
+ERROR - 2012-02-29 13:39:03 --> Severity: Warning  --> SoapClient::__doRequest() [<a href='soapclient.--dorequest'>soapclient.--dorequest</a>]: connect() failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+ C:\xampp\htdocs\store\application\models\mpaymentgateway.php 128
+ERROR - 2012-02-29 13:48:26 --> Severity: Warning  --> SoapClient::__doRequest() [<a href='soapclient.--dorequest'>soapclient.--dorequest</a>]: connect() failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+ C:\xampp\htdocs\store\application\models\mpaymentgateway.php 128
+ERROR - 2012-02-29 15:34:22 --> Severity: Warning  --> SoapClient::__doRequest() [<a href='soapclient.--dorequest'>soapclient.--dorequest</a>]: connect() failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+ C:\xampp\htdocs\store\application\models\mpaymentgateway.php 128
+ERROR - 2012-02-29 16:13:46 --> Severity: Warning  --> SoapClient::__doRequest() [<a href='soapclient.--dorequest'>soapclient.--dorequest</a>]: connect() failed: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+ C:\xampp\htdocs\store\application\models\mpaymentgateway.php 128
